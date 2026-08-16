@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PaperTear Studio • Neubrutalism Torn Paper Cutter</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="brand-wrapper">
+            <div class="brand-icon">✂️</div>
+            <div>
+                <div class="brand-title">
+                    PAPETEAR.STUDIO
+                    <span class="badge-brutal">cucthan</span>
+                </div>
+            </div>
+        </div>
+        <div class="header-status">
+            <div class="status-dot"></div>
+            <span>Ready</span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Sidebar Controls -->
+        <div class="sidebar">
+            <!-- Step 1: Upload Image -->
+            <div>
+                <div class="section-label">
+                    <span class="tag-num">01</span> Chọn Hình Ảnh
+                </div>
+                <div class="upload-dropzone" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon-box">📁</div>
+                    <div class="upload-prompt">Tải ảnh từ máy tính</div>
+                    <div class="upload-hint">PNG, JPG, WEBP, SVG</div>
+                    <input type="file" id="fileInput" accept="image/*">
+                    <button type="button" class="btn-sample-tag" onclick="loadSampleImage(event)">
+                        Nạp ảnh mẫu
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Mode Selector -->
+            <div>
+                <div class="section-label">
+                    <span class="tag-num">02</span> Chế Độ Lasso
+                </div>
+                <div class="mode-toggle-group">
+                    <button class="mode-btn active" id="modeFreehand">✏️ Tự Do</button>
+                    <button class="mode-btn" id="modePolygon">📐 Gấp Khúc</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Tear Customization -->
+            <div>
+                <div class="section-label">
+                    <span class="tag-num">03</span> Tùy Chỉnh Độ Xé
+                </div>
+
+                <div class="brutal-card">
+                    <!-- Roughness -->
+                    <div class="slider-item">
+                        <div class="slider-top">
+                            <span>Độ gợn sóng xé (Roughness)</span>
+                            <span class="slider-val-badge" id="valRoughness">15</span>
+                        </div>
+                        <input type="range" id="paramRoughness" min="4" max="35" value="15">
+                    </div>
+
+                    <!-- Base Border Width -->
+                    <div class="slider-item">
+                        <div class="slider-top">
+                            <span>Độ rộng viền trắng (Base Border)</span>
+                            <span class="slider-val-badge" id="valBorder">22px</span>
+                        </div>
+                        <input type="range" id="paramBorder" min="8" max="55" value="22">
+                    </div>
+
+                    <!-- Border Variation -->
+                    <div class="slider-item">
+                        <div class="slider-top">
+                            <span>Biến thiên viền (Border Variation)</span>
+                            <span class="slider-val-badge" id="valVariation">80%</span>
+                        </div>
+                        <input type="range" id="paramVariation" min="20" max="100" value="80">
+                    </div>
+
+                    <!-- Paper Fibers -->
+                    <div class="slider-item">
+                        <div class="slider-top">
+                            <span>Lông tơ xơ giấy (Paper Fibers)</span>
+                            <span class="slider-val-badge" id="valFibers">0%</span>
+                        </div>
+                        <input type="range" id="paramFibers" min="0" max="100" value="0">
+                    </div>
+
+                    <!-- Paper Tint -->
+                    <div class="select-box">
+                        <label for="paperTint">Tông màu đế giấy</label>
+                        <select id="paperTint">
+                            <option value="natural">Trắng giấy tự nhiên (#faf8f3)</option>
+                            <option value="vintage">Giấy báo cổ điển (#f3eedc)</option>
+                            <option value="pure">Trắng tinh khiết (#ffffff)</option>
+                            <option value="cardboard">Bìa kraft xi măng (#dfd3be)</option>
+                        </select>
+                    </div>
+
+                    <!-- Drop Shadow -->
+                    <div class="slider-item">
+                        <div class="slider-top">
+                            <span>Bóng đổ 3D (Drop Shadow)</span>
+                            <span class="slider-val-badge" id="valShadow">20px</span>
+                        </div>
+                        <input type="range" id="paramShadow" min="0" max="50" value="20">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding-top: 10px;">
+                <button class="btn-brutal btn-primary-brutal" id="btnCut" disabled>
+                    CUT
+                </button>
+                <button class="btn-brutal btn-secondary-brutal" id="btnReset">
+                    RESET
+                </button>
+            </div>
+        </div>
+
+        <!-- Canvas Workspace -->
+        <div class="workspace">
+            <div class="canvas-container" id="canvasContainer">
+                <canvas id="mainCanvas"></canvas>
+            </div>
+            <div class="brutal-instructions" id="instructionText">
+                <div class="dot"></div>
+                <span>Hãy tải ảnh lên hoặc chọn ảnh mẫu để bắt đầu</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Result -->
+    <div class="modal" id="resultModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>💥 KẾT QUẢ XÉ GIẤY THÀNH CÔNG!</h3>
+            </div>
+            <div class="modal-img-wrapper">
+                <img id="resultImg" src="" alt="Torn Paper Result">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-brutal btn-secondary-brutal" onclick="closeModal()">ĐÓNG / VẼ LẠI</button>
+                <a class="btn-brutal btn-primary-brutal" id="btnDownload" download="realistic-torn-paper.png">
+                    📥 TẢI PNG TRONG SUỐT
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/noise.js"></script>
+    <script src="js/paper-tear.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
