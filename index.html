@@ -110,6 +110,15 @@
                         <input type="range" id="paramFibers" min="0" max="100" value="0">
                     </div>
 
+                    <!-- Drop Shadow -->
+                    <div class="slider-item">
+                        <div class="slider-top">
+                            <span>Bóng đổ 3D (Drop Shadow)</span>
+                            <span class="slider-val-badge" id="valShadow">20px</span>
+                        </div>
+                        <input type="range" id="paramShadow" min="0" max="50" value="20">
+                    </div>
+
                     <!-- Paper Tint -->
                     <div class="select-box">
                         <label for="paperTint">Tông màu đế giấy</label>
@@ -119,15 +128,6 @@
                             <option value="pure">Trắng tinh khiết (#ffffff)</option>
                             <option value="cardboard">Bìa kraft xi măng (#dfd3be)</option>
                         </select>
-                    </div>
-
-                    <!-- Drop Shadow -->
-                    <div class="slider-item">
-                        <div class="slider-top">
-                            <span>Bóng đổ 3D (Drop Shadow)</span>
-                            <span class="slider-val-badge" id="valShadow">20px</span>
-                        </div>
-                        <input type="range" id="paramShadow" min="0" max="50" value="20">
                     </div>
                 </div>
             </div>
@@ -159,15 +159,15 @@
     <div class="modal" id="resultModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>💥 KẾT QUẢ XÉ GIẤY THÀNH CÔNG!</h3>
+                <h3>KẾT QUẢ XÉ GIẤY THÀNH CÔNG!</h3>
             </div>
             <div class="modal-img-wrapper">
                 <img id="resultImg" src="" alt="Torn Paper Result">
             </div>
             <div class="modal-actions">
-                <button class="btn-brutal btn-secondary-brutal" onclick="closeModal()">ĐÓNG / VẼ LẠI</button>
+                <button class="btn-brutal btn-secondary-brutal" onclick="closeModal()">ĐÓNG</button>
                 <a class="btn-brutal btn-primary-brutal" id="btnDownload" download="realistic-torn-paper.png">
-                    📥 TẢI PNG TRONG SUỐT
+                    TẢI VỀ
                 </a>
             </div>
         </div>
