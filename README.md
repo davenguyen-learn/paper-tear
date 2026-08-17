@@ -6,8 +6,11 @@
 
 ---
 
-## ✨ Tính năng nổi bật
-
+- 📥 **Nạp ảnh siêu linh hoạt (Zero-effort Import)**:
+  - 🌐 **Kéo thả ảnh trực tiếp từ trang web khác**: Kéo ảnh từ bất kỳ website, tab trình duyệt nào thả thẳng vào trang mà không cần tải về máy.
+  - 📁 **Kéo thả tệp từ máy tính**: Thả file ảnh vào bất kỳ vị trí nào trên màn hình.
+  - 📋 **Dán từ Clipboard (Ctrl + V)**: Dán ảnh chụp màn hình hoặc link ảnh ngay tức thì.
+  - 🔗 **Nạp từ URL**: Dán liên kết ảnh từ internet nhanh chóng với bộ lọc CORS đa tầng tự động.
 - 🎨 **Phong cách Neubrutalism thời thượng**: Giao diện đậm chất đồ họa với viền đậm, bóng dập nổi (hard drop shadow), tone màu neon nổi bật.
 - ✂️ **2 Chế độ cắt Lasso thông minh**:
   - **✏️ Tự do (Freehand)**: Vẽ đường bao quanh tùy thích bằng chuột hoặc touchpad.
@@ -19,7 +22,7 @@
   - **Lông tơ xơ giấy (Paper Fibers)**: Mô phỏng các sợi tơ xơ vụn của bột giấy.
   - **Tông màu đế giấy (Paper Tint)**: Trắng tự nhiên, giấy báo cổ điển, trắng tinh khiết, bìa kraft xi măng.
   - **Bóng đổ 3D (Drop Shadow)**: Hiệu ứng nổi 3D đa chiều trên canvas.
-- 📥 **Xuất ảnh chất lượng cao**: Xuất kết quả định dạng PNG trong suốt (Transparent PNG), dễ dàng ghép vào thiết kế, banner, poster, thumbnail YouTube/TikTok.
+- 💾 **Xuất ảnh chất lượng cao**: Xuất kết quả định dạng PNG trong suốt (Transparent PNG), dễ dàng ghép vào thiết kế, banner, poster, thumbnail YouTube/TikTok.
 
 ---
 

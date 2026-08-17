@@ -45,14 +45,19 @@
                 <div class="section-label">
                     <span class="tag-num">01</span> Chọn Hình Ảnh
                 </div>
-                <div class="upload-dropzone" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-dropzone" id="uploadDropzone" onclick="document.getElementById('fileInput').click()">
                     <div class="upload-icon-box">📁</div>
-                    <div class="upload-prompt">Tải ảnh từ máy tính</div>
-                    <div class="upload-hint">PNG, JPG, WEBP, SVG</div>
+                    <div class="upload-prompt">Kéo thả ảnh hoặc tải lên</div>
+                    <div class="upload-hint">Kéo từ web khác, máy tính hoặc Ctrl+V</div>
                     <input type="file" id="fileInput" accept="image/*">
-                    <button type="button" class="btn-sample-tag" onclick="loadSampleImage(event)">
-                        Nạp ảnh mẫu
-                    </button>
+                    <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-top: 8px;">
+                        <button type="button" class="btn-sample-tag" onclick="loadSampleImage(event)">
+                            Nạp ảnh mẫu
+                        </button>
+                        <button type="button" class="btn-url-tag" onclick="openUrlModal(event)">
+                            🔗 Nhập Link URL
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -144,13 +149,54 @@
         </div>
 
         <!-- Canvas Workspace -->
-        <div class="workspace">
+        <div class="workspace" id="workspace">
             <div class="canvas-container" id="canvasContainer">
                 <canvas id="mainCanvas"></canvas>
             </div>
             <div class="brutal-instructions" id="instructionText">
                 <div class="dot"></div>
-                <span>Hãy tải ảnh lên hoặc chọn ảnh mẫu để bắt đầu</span>
+                <span>Hãy kéo thả ảnh từ web khác, tải ảnh lên hoặc chọn ảnh mẫu</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drag & Drop Fullscreen Overlay -->
+    <div class="drag-overlay" id="dragOverlay">
+        <div class="drag-box">
+            <div class="drag-icon">📥</div>
+            <h2>THẢ ẢNH VÀO ĐÂY ĐỂ XỬ LÝ!</h2>
+            <p>Hỗ trợ kéo trực tiếp từ trang web/tab khác, file từ máy tính hoặc dán clipboard</p>
+            <div class="drag-badge">Kéo thả ảnh tức thì • Không cần tải về</div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-card">
+            <div class="brutal-spinner"></div>
+            <div class="loading-text" id="loadingText">Đang tải ảnh từ nguồn web...</div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- URL Input Modal -->
+    <div class="modal" id="urlModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>🔗 NHẬP LINK ẢNH TỪ WEB</h3>
+            </div>
+            <div class="url-input-container">
+                <p style="font-size: 0.84rem; font-weight: 600; color: var(--dark-muted);">
+                    Dán địa chỉ URL của hình ảnh bất kỳ từ internet vào đây:
+                </p>
+                <input type="text" class="url-input-box" id="inputImageUrl" placeholder="https://example.com/image.jpg"
+                    autofocus>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-brutal btn-secondary-brutal" onclick="closeUrlModal()">HỦY</button>
+                <button class="btn-brutal btn-primary-brutal" onclick="submitUrlModal()">NẠP ẢNH</button>
             </div>
         </div>
     </div>

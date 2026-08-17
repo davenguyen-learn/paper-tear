@@ -1,5 +1,5 @@
 /**
- * app.js - UI Controller & Event Handlers
+ * app.js - UI Controller, Drag & Drop, Clipboard, and Event Handlers
  */
 
 // Application State
@@ -17,6 +17,15 @@ const state = {
 const canvas = document.getElementById('mainCanvas');
 const ctx = canvas.getContext('2d');
 const fileInput = document.getElementById('fileInput');
+const uploadDropzone = document.getElementById('uploadDropzone');
+const workspace = document.getElementById('workspace');
+const dragOverlay = document.getElementById('dragOverlay');
+const loadingOverlay = document.getElementById('loadingOverlay');
+const loadingText = document.getElementById('loadingText');
+const toastContainer = document.getElementById('toastContainer');
+const urlModal = document.getElementById('urlModal');
+const inputImageUrl = document.getElementById('inputImageUrl');
+
 const btnCut = document.getElementById('btnCut');
 const btnReset = document.getElementById('btnReset');
 const modeFreehand = document.getElementById('modeFreehand');
@@ -38,18 +47,163 @@ paramVariation.oninput = (e) => document.getElementById('valVariation').innerTex
 paramFibers.oninput = (e) => document.getElementById('valFibers').innerText = e.target.value + '%';
 paramShadow.oninput = (e) => document.getElementById('valShadow').innerText = e.target.value + 'px';
 
-// Load User Uploaded Image
+// =========================================================================
+// UI HELPERS (TOAST & LOADING)
+// =========================================================================
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    let icon = 'ℹ️';
+    if (type === 'success') icon = '✅';
+    if (type === 'error') icon = '❌';
+
+    toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+    toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('toast-fadeout');
+        setTimeout(() => toast.remove(), 200);
+    }, 3500);
+}
+
+function showLoading(text = 'Đang tải...') {
+    if (loadingText) loadingText.innerText = text;
+    if (loadingOverlay) loadingOverlay.style.display = 'flex';
+}
+
+function hideLoading() {
+    if (loadingOverlay) loadingOverlay.style.display = 'none';
+}
+
+// =========================================================================
+// IMAGE LOADING LOGIC (FILE, BLOB, URL, CORS-SAFE)
+// =========================================================================
+
+// Load User Uploaded Image from input file
 fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    loadImageFromFile(file);
+});
+
+function loadImageFromFile(file) {
+    if (!file.type.startsWith('image/')) {
+        showToast('Tệp đã chọn không phải là hình ảnh!', 'error');
+        return;
+    }
+    showLoading('Đang xử lý hình ảnh...');
     const reader = new FileReader();
     reader.onload = (event) => {
         const img = new Image();
-        img.onload = () => initImage(img);
+        img.onload = () => {
+            hideLoading();
+            initImage(img);
+            showToast('Đã mở ảnh thành công!', 'success');
+        };
+        img.onerror = () => {
+            hideLoading();
+            showToast('Lỗi khi mở hình ảnh!', 'error');
+        };
         img.src = event.target.result;
     };
     reader.readAsDataURL(file);
-});
+}
+
+// Load Image from URL with multi-fallback for CORS & canvas tainting
+async function loadImageFromUrl(url) {
+    if (!url) return;
+    url = url.trim();
+
+    showLoading('Đang tải ảnh từ nguồn web...');
+
+    // If it's already a data URL or blob URL, load directly
+    if (url.startsWith('data:image/') || url.startsWith('blob:')) {
+        const img = new Image();
+        img.onload = () => {
+            hideLoading();
+            initImage(img);
+            showToast('Đã nạp ảnh thành công!', 'success');
+        };
+        img.onerror = () => {
+            hideLoading();
+            showToast('Không thể mở hình ảnh!', 'error');
+        };
+        img.src = url;
+        return;
+    }
+
+    // List of CORS fetch strategies to guarantee clean canvas without tainting
+    const strategies = [
+        // 1. Direct fetch with CORS mode
+        async (u) => {
+            const res = await fetch(u, { mode: 'cors' });
+            if (!res.ok) throw new Error('Direct fetch status ' + res.status);
+            return await res.blob();
+        },
+        // 2. wsrv.nl image proxy (global high-performance CORS proxy)
+        async (u) => {
+            const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(u)}&output=png`;
+            const res = await fetch(proxyUrl);
+            if (!res.ok) throw new Error('wsrv fetch status ' + res.status);
+            return await res.blob();
+        },
+        // 3. corsproxy.io
+        async (u) => {
+            const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(u)}`;
+            const res = await fetch(proxyUrl);
+            if (!res.ok) throw new Error('corsproxy fetch status ' + res.status);
+            return await res.blob();
+        },
+        // 4. allorigins proxy
+        async (u) => {
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`;
+            const res = await fetch(proxyUrl);
+            if (!res.ok) throw new Error('allorigins fetch status ' + res.status);
+            return await res.blob();
+        }
+    ];
+
+    let blob = null;
+    for (const fetchStrategy of strategies) {
+        try {
+            blob = await fetchStrategy(url);
+            if (blob && blob.size > 0 && blob.type.includes('image')) {
+                break;
+            }
+        } catch (err) {
+            // continue trying next strategy
+        }
+    }
+
+    if (blob) {
+        const objectUrl = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => {
+            hideLoading();
+            initImage(img);
+            showToast('Đã kéo nạp ảnh từ web thành công!', 'success');
+        };
+        img.onerror = () => {
+            hideLoading();
+            showToast('Lỗi dựng hình ảnh từ dữ liệu tải về!', 'error');
+        };
+        img.src = objectUrl;
+    } else {
+        // Fallback: try loading with crossOrigin anonymous directly
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            hideLoading();
+            initImage(img);
+            showToast('Đã nạp ảnh thành công!', 'success');
+        };
+        img.onerror = () => {
+            hideLoading();
+            showToast('Không thể tải ảnh do chính sách bảo mật của trang gốc!', 'error');
+        };
+        img.src = url;
+    }
+}
 
 // Load Sample Image (image.png from directory)
 function loadSampleImage(e) {
@@ -57,7 +211,6 @@ function loadSampleImage(e) {
     const img = new Image();
     img.onload = () => initImage(img);
     img.onerror = () => {
-        // Fallback to assets/sample.png if image.png fails
         img.src = 'assets/sample.png';
     };
     img.src = 'image.png';
@@ -91,7 +244,7 @@ function setupCanvas() {
 
 function updateInstruction() {
     if (!state.image) {
-        instructionText.innerHTML = '<div class="dot"></div><span>Hãy tải ảnh lên hoặc chọn ảnh mẫu để bắt đầu</span>';
+        instructionText.innerHTML = '<div class="dot"></div><span>Hãy kéo thả ảnh từ web khác, tải ảnh lên hoặc chọn ảnh mẫu</span>';
         return;
     }
     if (state.mode === 'freehand') {
@@ -101,7 +254,216 @@ function updateInstruction() {
     }
 }
 
-// Mode Switching
+// =========================================================================
+// DRAG & DROP HANDLING (CROSS-TAB, CROSS-WINDOW, BROWSER, & LOCAL FILES)
+// =========================================================================
+
+// Parse dropped data transfer object
+async function handleDropTransfer(dataTransfer) {
+    if (!dataTransfer) return;
+
+    // 1. Check for files (local file or browser file transfer)
+    if (dataTransfer.files && dataTransfer.files.length > 0) {
+        for (let i = 0; i < dataTransfer.files.length; i++) {
+            const file = dataTransfer.files[i];
+            if (file.type.startsWith('image/')) {
+                loadImageFromFile(file);
+                return;
+            }
+        }
+    }
+
+    // 2. Check for drag items with kind 'file'
+    if (dataTransfer.items && dataTransfer.items.length > 0) {
+        for (let i = 0; i < dataTransfer.items.length; i++) {
+            const item = dataTransfer.items[i];
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                if (file) {
+                    loadImageFromFile(file);
+                    return;
+                }
+            }
+        }
+    }
+
+    // 3. Check for HTML snippet (dragged <img> tag or element from another webpage)
+    const htmlData = dataTransfer.getData('text/html');
+    if (htmlData) {
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlData, 'text/html');
+            const img = doc.querySelector('img');
+            if (img && img.src) {
+                loadImageFromUrl(img.src);
+                return;
+            }
+            // Check for source in picture tag
+            const source = doc.querySelector('source');
+            if (source && source.srcset) {
+                const firstSrc = source.srcset.split(',')[0].trim().split(' ')[0];
+                if (firstSrc) {
+                    loadImageFromUrl(firstSrc);
+                    return;
+                }
+            }
+        } catch (e) {
+            console.error('Error parsing dropped HTML', e);
+        }
+    }
+
+    // 4. Check for URI list (standard browser URL drag)
+    const uriList = dataTransfer.getData('text/uri-list');
+    if (uriList) {
+        const urls = uriList.split(/\r?\n/).map(u => u.trim()).filter(u => u && !u.startsWith('#'));
+        if (urls.length > 0) {
+            loadImageFromUrl(urls[0]);
+            return;
+        }
+    }
+
+    // 5. Check for plain text (URL or Data URI)
+    const plainText = dataTransfer.getData('text/plain');
+    if (plainText) {
+        const trimmed = plainText.trim();
+        if (
+            trimmed.startsWith('data:image/') ||
+            trimmed.startsWith('http://') ||
+            trimmed.startsWith('https://') ||
+            trimmed.startsWith('blob:')
+        ) {
+            loadImageFromUrl(trimmed);
+            return;
+        }
+    }
+
+    showToast('Không tìm thấy hình ảnh hợp lệ trong dữ liệu kéo thả!', 'error');
+}
+
+// Window Drag & Drop Listeners for full-screen overlay experience
+let dragCounter = 0;
+
+window.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    dragCounter++;
+    if (dragOverlay) dragOverlay.classList.add('active');
+    if (uploadDropzone) uploadDropzone.classList.add('drag-active');
+});
+
+window.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+});
+
+window.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0) {
+        dragCounter = 0;
+        if (dragOverlay) dragOverlay.classList.remove('active');
+        if (uploadDropzone) uploadDropzone.classList.remove('drag-active');
+    }
+});
+
+window.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dragCounter = 0;
+    if (dragOverlay) dragOverlay.classList.remove('active');
+    if (uploadDropzone) uploadDropzone.classList.remove('drag-active');
+
+    handleDropTransfer(e.dataTransfer);
+});
+
+// =========================================================================
+// CLIPBOARD PASTE HANDLING (CTRL + V)
+// =========================================================================
+window.addEventListener('paste', async (e) => {
+    // If active element is an input inside a modal, don't intercept unless wanted
+    if (e.target && e.target.id === 'inputImageUrl') return;
+
+    const clipboardData = e.clipboardData || window.clipboardData;
+    if (!clipboardData) return;
+
+    // 1. Check for image files in clipboard (e.g. screenshot or copied image file)
+    if (clipboardData.files && clipboardData.files.length > 0) {
+        for (let i = 0; i < clipboardData.files.length; i++) {
+            const file = clipboardData.files[i];
+            if (file.type.startsWith('image/')) {
+                e.preventDefault();
+                loadImageFromFile(file);
+                showToast('📋 Đã dán ảnh từ Clipboard!', 'success');
+                return;
+            }
+        }
+    }
+
+    // 2. Check for clipboard items
+    if (clipboardData.items && clipboardData.items.length > 0) {
+        for (let i = 0; i < clipboardData.items.length; i++) {
+            const item = clipboardData.items[i];
+            if (item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                if (file) {
+                    e.preventDefault();
+                    loadImageFromFile(file);
+                    showToast('📋 Đã dán ảnh từ Clipboard!', 'success');
+                    return;
+                }
+            }
+        }
+    }
+
+    // 3. Check for URL string in clipboard text
+    const text = clipboardData.getData('text');
+    if (text) {
+        const trimmed = text.trim();
+        if (
+            trimmed.startsWith('data:image/') ||
+            ((trimmed.startsWith('http://') || trimmed.startsWith('https://')) &&
+                (trimmed.match(/\.(jpeg|jpg|gif|png|webp|svg|avif)($|\?)/i) || trimmed.includes('image') || trimmed.includes('img') || trimmed.includes('photo')))
+        ) {
+            e.preventDefault();
+            loadImageFromUrl(trimmed);
+            return;
+        }
+    }
+});
+
+// =========================================================================
+// URL MODAL HANDLING
+// =========================================================================
+function openUrlModal(e) {
+    if (e) e.stopPropagation();
+    urlModal.style.display = 'flex';
+    inputImageUrl.value = '';
+    setTimeout(() => inputImageUrl.focus(), 50);
+}
+
+function closeUrlModal() {
+    urlModal.style.display = 'none';
+}
+
+function submitUrlModal() {
+    const url = inputImageUrl.value.trim();
+    if (!url) {
+        showToast('Vui lòng dán liên kết ảnh!', 'error');
+        return;
+    }
+    closeUrlModal();
+    loadImageFromUrl(url);
+}
+
+inputImageUrl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        submitUrlModal();
+    } else if (e.key === 'Escape') {
+        closeUrlModal();
+    }
+});
+
+// =========================================================================
+// MODE SWITCHING & DRAWING INTERACTIONS
+// =========================================================================
 modeFreehand.onclick = () => {
     state.mode = 'freehand';
     modeFreehand.classList.add('active');
@@ -234,7 +596,7 @@ btnReset.onclick = () => {
 // Cut Button Action
 btnCut.onclick = () => {
     if (!state.image || state.points.length < 3) {
-        alert('Vui lòng dùng chuột khoanh vùng muốn cắt trước!');
+        showToast('Vui lòng dùng chuột khoanh vùng muốn cắt trước!', 'error');
         return;
     }
 
@@ -253,13 +615,18 @@ btnCut.onclick = () => {
         tintMode: paperTint.value
     };
 
-    const resultCanvas = renderTornPaperResult(state.image, fullPoints, options);
-    if (!resultCanvas) return;
+    try {
+        const resultCanvas = renderTornPaperResult(state.image, fullPoints, options);
+        if (!resultCanvas) return;
 
-    const resultDataUrl = resultCanvas.toDataURL('image/png');
-    document.getElementById('resultImg').src = resultDataUrl;
-    document.getElementById('btnDownload').href = resultDataUrl;
-    document.getElementById('resultModal').style.display = 'flex';
+        const resultDataUrl = resultCanvas.toDataURL('image/png');
+        document.getElementById('resultImg').src = resultDataUrl;
+        document.getElementById('btnDownload').href = resultDataUrl;
+        document.getElementById('resultModal').style.display = 'flex';
+    } catch (err) {
+        console.error('Error rendering result:', err);
+        showToast('Lỗi khi render ảnh: ' + err.message, 'error');
+    }
 };
 
 function closeModal() {
@@ -275,3 +642,4 @@ window.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('resize', () => {
     if (state.image) setupCanvas();
 });
+
